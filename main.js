@@ -3,6 +3,7 @@ const mitm = require('mitm-papandreou')();
 const http = require('http');
 const https = require('https');
 const pick = require('lodash.pick');
+const uniqBy = require('lodash.uniqby');
 const fs = require('fs');
 
 // Monkey-patch fs so that npm thinks its metadata cache is empty:
@@ -98,7 +99,7 @@ function removeVersionsFromPackageMetadata(obj, timeByVersion) {
     let latestPreservedVersion;
     let latestPreservedVersionTime;
     for (const version of Object.keys(timeByVersion)) {
-      if (version !== 'modified' && version !== 'changed') {
+      if (version !== 'modified' && version !== 'created') {
         const time = new Date(timeByVersion[version]);
         if (time > ignoreNewerThan) {
           delete timeByVersion[version];
@@ -126,6 +127,19 @@ function removeVersionsFromPackageMetadata(obj, timeByVersion) {
     }
   }
   return changesMade;
+}
+
+const timelineEvents = [];
+function updateTimeline(packageName, timeByVersion) {
+  for (const version of Object.keys(timeByVersion)) {
+    if (version !== 'modified' && version !== 'created') {
+      timelineEvents.push({
+        packageName,
+        version,
+        time: new Date(timeByVersion[version])
+      });
+    }
+  }
 }
 
 let bypassNextConnect = false;
@@ -236,6 +250,9 @@ mitm
             .time;
         }
 
+        if (timeByVersion) {
+          updateTimeline(obj.name, timeByVersion);
+        }
         const changesMade = removeVersionsFromPackageMetadata(
           obj,
           timeByVersion
@@ -263,3 +280,17 @@ mitm
 
 // Run the wrapped executable:
 require('spawn-wrap').runMain();
+
+if (process.env.NPM_BISECT_COMPUTE_TIMELINE) {
+  process.on('exit', () => {
+    timelineEvents.sort((a, b) => {
+      return a.time.getTime() - b.time.getTime();
+    });
+    for (const { packageName, version, time } of uniqBy(
+      timelineEvents,
+      ({ packageName, version }) => `${packageName}@${version}`
+    )) {
+      console.log(`${time.toJSON()}: ${packageName}@${version}`);
+    }
+  });
+}
