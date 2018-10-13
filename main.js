@@ -12,7 +12,7 @@ const metadataPropertyNames = [
 const ignoreNewerThan = new Date(process.env.NPM_BISECT_IGNORE_NEWER_THAN);
 
 function consumeReadableStream(readableStream) {
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     const chunks = [];
     readableStream
       .on('data', chunk => {
@@ -24,7 +24,7 @@ function consumeReadableStream(readableStream) {
       .on('error', err => {
         resolve({
           body: Buffer.concat(chunks),
-          error: err
+          err
         });
       });
   });
@@ -45,9 +45,9 @@ function performRequest(requestResult) {
         consumeReadableStream(response)
           .catch(reject)
           .then(result => {
-            if (result.error) {
+            if (result.err) {
               // TODO: Consider adding support for recording this (the upstream response erroring out while we're recording it)
-              return reject(result.error);
+              return reject(result.err);
             }
 
             resolve({
@@ -122,10 +122,10 @@ mitm
       ...pick(clientSocketOptions, metadataPropertyNames)
     };
 
-    const { body, error } = await consumeReadableStream(req);
+    const { body, err } = await consumeReadableStream(req);
 
-    if (error) {
-      throw error;
+    if (err) {
+      throw err;
     }
 
     bypassNextConnect = true;
