@@ -1,0 +1,27 @@
+{
+  "name": "npm-bisect",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "npm-bisect": "./index.js"
+  },
+  "author": "Andreas Lind <andreaslindpetersen@gmail.com>",
+  "license": "BSD-3-Clause",
+  "dependencies": {
+    "lodash.pick": "^4.4.0",
+    "messy": "^6.17.0",
+    "mitm-papandreou": "^1.3.3-patch5",
+    "spawn-wrap": "^1.4.2",
+    "yargs": "^12.0.2"
+  },
+  "devDependencies": {
+    "eslint": "^5.7.0",
+    "eslint-config-pretty-standard": "^2.0.0",
+    "eslint-plugin-prettier": "^3.0.0",
+    "prettier": "^1.14.3"
+  }
+}
