@@ -188,75 +188,77 @@ mitm
         req.headers.accept = 'application/json';
       }
     }
+
+    const upstreamRequestOptions = {
+      encrypted: req.socket.encrypted,
+      headers: req.headers,
+      method: req.method,
+      host,
+      // default the port to HTTP values if not set
+      port: port || (req.socket.encrypted ? 443 : 80),
+      path: req.url,
+      body,
+      metadata
+    };
+
+    let responseResult;
     try {
-      const upstreamRequestOptions = {
-        encrypted: req.socket.encrypted,
-        headers: req.headers,
-        method: req.method,
-        host,
-        // default the port to HTTP values if not set
-        port: port || (req.socket.encrypted ? 443 : 80),
-        path: req.url,
-        body,
-        metadata
-      };
-
-      const responseResult = await performRequest(upstreamRequestOptions);
-
-      setImmediate(async () => {
-        if (
-          couldBePackageMetadataRequest &&
-          /json/.test(responseResult.headers['content-type'])
-        ) {
-          const obj = JSON.parse(responseResult.body.toString('utf-8'));
-          let timeByVersion = obj.time;
-          if (
-            !timeByVersion &&
-            upstreamRequestOptions.headers.accept &&
-            upstreamRequestOptions.headers.accept.includes(
-              'application/vnd.npm.install-v1+json'
-            )
-          ) {
-            upstreamRequestOptions.headers = {
-              ...upstreamRequestOptions.headers,
-              accept: 'application/json'
-            };
-            bypassNextConnect = true;
-
-            const fullMetadataResult = await performRequest(
-              upstreamRequestOptions
-            );
-            timeByVersion = JSON.parse(
-              fullMetadataResult.body.toString('utf-8')
-            ).time;
-          }
-
-          const changesMade = removeVersionsFromPackageMetadata(
-            obj,
-            timeByVersion
-          );
-
-          if (changesMade) {
-            responseResult.body = Buffer.from(
-              JSON.stringify(obj, undefined, '  ')
-            );
-            responseResult.headers['content-length'] = String(
-              responseResult.body.length
-            );
-            delete responseResult.headers['transfer-encoding'];
-            delete responseResult.headers['content-encoding'];
-            responseResult.headers.connection = 'close';
-          }
-        }
-        res.statusCode = responseResult.statusCode;
-        for (const headerName of Object.keys(responseResult.headers)) {
-          res.setHeader(headerName, responseResult.headers[headerName]);
-        }
-        res.end(responseResult.body);
-      });
+      responseResult = await performRequest(upstreamRequestOptions);
     } catch (err) {
       clientSocket.emit('error', err);
+      return;
     }
+
+    setImmediate(async () => {
+      if (
+        couldBePackageMetadataRequest &&
+        /json/.test(responseResult.headers['content-type'])
+      ) {
+        const obj = JSON.parse(responseResult.body.toString('utf-8'));
+        let timeByVersion = obj.time;
+        if (
+          !timeByVersion &&
+          upstreamRequestOptions.headers.accept &&
+          upstreamRequestOptions.headers.accept.includes(
+            'application/vnd.npm.install-v1+json'
+          )
+        ) {
+          upstreamRequestOptions.headers = {
+            ...upstreamRequestOptions.headers,
+            accept: 'application/json'
+          };
+          bypassNextConnect = true;
+
+          const fullMetadataResult = await performRequest(
+            upstreamRequestOptions
+          );
+          timeByVersion = JSON.parse(fullMetadataResult.body.toString('utf-8'))
+            .time;
+        }
+
+        const changesMade = removeVersionsFromPackageMetadata(
+          obj,
+          timeByVersion
+        );
+
+        if (changesMade) {
+          responseResult.body = Buffer.from(
+            JSON.stringify(obj, undefined, '  ')
+          );
+          responseResult.headers['content-length'] = String(
+            responseResult.body.length
+          );
+          delete responseResult.headers['transfer-encoding'];
+          delete responseResult.headers['content-encoding'];
+          responseResult.headers.connection = 'close';
+        }
+      }
+      res.statusCode = responseResult.statusCode;
+      for (const headerName of Object.keys(responseResult.headers)) {
+        res.setHeader(headerName, responseResult.headers[headerName]);
+      }
+      res.end(responseResult.body);
+    });
   });
 
 // Run the wrapped executable:
