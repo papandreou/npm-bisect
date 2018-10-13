@@ -5,7 +5,13 @@ const https = require('https');
 const pick = require('lodash.pick');
 
 const metadataPropertyNames = [
-  ...require('messy').HttpRequest.metadataPropertyNames,
+  'host',
+  'port',
+  'encrypted',
+  'cert',
+  'key',
+  'ca',
+  'credentials',
   'rejectUnauthorized'
 ];
 
