@@ -3,6 +3,29 @@ const mitm = require('mitm-papandreou')();
 const http = require('http');
 const https = require('https');
 const pick = require('lodash.pick');
+const fs = require('fs');
+
+// Monkey-patch fs so that npm thinks its metadata cache is empty:
+for (const methodName of ['stat', 'lstat']) {
+  const orig = fs[methodName];
+  fs[methodName] = (path, ...args) => {
+    if (/\/\.npm\/_cacache\/content-v2\/sha\d+\/\w+\/\w+\/\w+/.test(path)) {
+      const cb = args.pop();
+      if (typeof cb === 'function') {
+        const err = new Error(
+          `ENOENT: no such file or directory, ${methodName} '${path}'`
+        );
+        err.errno = -2;
+        err.syscall = 'stat';
+        err.code = 'ENOENT';
+        err.path = 'foo';
+        setImmediate(() => cb(err));
+      }
+    } else {
+      return orig(path, ...args);
+    }
+  };
+}
 
 const metadataPropertyNames = [
   'host',
