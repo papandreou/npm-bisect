@@ -21,10 +21,12 @@ const {
       'Shell command to run for each step. Will use interactive mode if not given'
   })
   .option('good', {
-    type: 'string'
+    type: 'string',
+    describe: 'Date or datetime where the project was last known to work'
   })
   .option('bad', {
-    type: 'string'
+    type: 'string',
+    describe: 'Date or datetime where the project was first found broken'
   }).argv;
 
 async function getTimeOfHeadCommit() {
