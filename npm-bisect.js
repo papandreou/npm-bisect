@@ -10,11 +10,16 @@ const consumeReadableStream = require('./consumeReadableStream');
 const chalk = require('chalk');
 const os = require('os');
 
-const { good, bad, debug, ignore, run } = require('yargs')
+const { good, bad, debug, ignore, yarn, run } = require('yargs')
   .option('debug', {
     type: 'boolean',
     default: false,
     describe: 'Produce verbose output for each step'
+  })
+  .option('yarn', {
+    type: 'boolean',
+    default: false,
+    describe: 'Use yarn instead of npm'
   })
   .option('run', {
     type: 'string',
@@ -45,7 +50,10 @@ async function getTimeOfHeadCommit() {
   );
 }
 
-async function freshNpmInstall({ ignoreNewerThan, computeTimeline = false }) {
+async function installDependencies({
+  ignoreNewerThan,
+  computeTimeline = false
+}) {
   await rimrafAsync('node_modules');
   // Use a separate cache dir for each point in time so the monkey patched
   // payloads don't mess anything up:
@@ -67,8 +75,11 @@ async function freshNpmInstall({ ignoreNewerThan, computeTimeline = false }) {
   }
   return new Promise((resolve, reject) => {
     const unwrap = spawnWrap([pathModule.resolve(__dirname, 'main.js')], env);
-    const command = 'npm';
+    const command = yarn ? 'yarn' : 'npm';
     const args = ['install'];
+    if (yarn) {
+      args.push('--cache-folder', cacheDir, '--pure-lockfile');
+    }
     const p = childProcess.spawn(command, args, options);
     const stderrPromise = consumeReadableStream(p.stderr);
     p.on('error', reject).on('exit', async exitCode => {
@@ -178,7 +189,7 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
         validate: str => !isNaN(new Date(str).getTime())
       })).bad
   );
-  let timeline = await freshNpmInstall({
+  let timeline = await installDependencies({
     ignoreNewerThan: goodTime,
     computeTimeline: true
   });
@@ -231,7 +242,7 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
       `Roughly ${numStepsLeft} step${numStepsLeft === 1 ? '' : 's'} left`
     );
     const ignoreNewerThan = new Date(time.getTime() - 1);
-    await freshNpmInstall({ ignoreNewerThan });
+    await installDependencies({ ignoreNewerThan });
     const works = await checkWorkingState();
     if (works) {
       goodBeforeIndex = tryBeforeIndex;

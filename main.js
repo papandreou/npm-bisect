@@ -101,13 +101,17 @@ function updateTimeline(packageName, timeByVersion) {
   }
 }
 
+function isRegistryHostname(hostname) {
+  return ['registry.npmjs.org', 'registry.yarnpkg.com'].includes(hostname);
+}
+
 let bypassNextConnect = false;
 mitm
   .on('connect', (socket, opts) => {
     if (bypassNextConnect) {
       socket.bypass();
       bypassNextConnect = false;
-    } else if (opts.servername === 'registry.npmjs.org') {
+    } else if (isRegistryHostname(opts.servername)) {
       bypassNextConnect = true;
     } else {
       socket.bypass();
@@ -148,19 +152,16 @@ mitm
     }
 
     let couldBePackageMetadataRequest = false;
-    if (host === 'registry.npmjs.org') {
+    if (isRegistryHostname(host)) {
       delete req.headers['accept-encoding']; // Save the trouble of decoding gzip/brotli/deflate
       delete req.headers['if-none-match']; // Avoid 304s so we don't get to patch up the response
       delete req.headers.connection;
       couldBePackageMetadataRequest = true;
-      if (
-        req.headers.accept ===
-          'application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*'
-      ) {
+      if (req.headers.accept.includes('application/vnd.npm.install-v1+json')) {
+        // Avoid an extra metadata lookup to get the publication times
         req.headers.accept = 'application/json';
       }
     }
-
     const upstreamRequestOptions = {
       encrypted: req.socket.encrypted,
       headers: req.headers,
@@ -250,7 +251,7 @@ if (process.env.NPM_BISECT_COMPUTE_TIMELINE) {
     );
 
     console.error(
-      `NPM_BISECT_COMPUTE_TIMELINE:${JSON.stringify(uniquetimeline)}`
+      `\nNPM_BISECT_COMPUTE_TIMELINE:${JSON.stringify(uniquetimeline)}`
     );
   });
 }
