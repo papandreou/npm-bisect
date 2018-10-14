@@ -13,8 +13,14 @@ const os = require('os');
 const {
   good,
   bad,
+  debug,
   _: [runCommand, ...runArgs]
 } = require('yargs')
+  .option('debug', {
+    type: 'boolean',
+    default: false,
+    describe: 'Produce verbose output for each step'
+  })
   .option('run', {
     type: 'string',
     describe:
@@ -136,6 +142,15 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
     } else if (i + 1 === tryBeforeIndex) {
       line = chalk.yellow(line);
     }
+    if (i === tryBeforeIndex) {
+      line += ' tryBeforeIndex';
+    }
+    if (i === goodBeforeIndex) {
+      line += ' goodBeforeIndex';
+    }
+    if (i === badAfterIndex) {
+      line += ' badAfterIndex';
+    }
     console.log(line);
   }
 }
@@ -201,7 +216,9 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
     const tryBeforeIndex = Math.round(
       goodBeforeIndex + (badAfterIndex - goodBeforeIndex) / 2
     );
-    dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex);
+    if (debug) {
+      dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex);
+    }
     const { packageName, version, time } = timeline[tryBeforeIndex];
     console.log(
       `Let's try right before ${packageName}@${version} was published`
@@ -219,7 +236,9 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
       badAfterIndex = tryBeforeIndex - 1;
     }
   }
-  dumpState(timeline, goodBeforeIndex, badAfterIndex);
+  if (debug) {
+    dumpState(timeline, goodBeforeIndex, badAfterIndex);
+  }
   const badEvent = timeline[goodBeforeIndex];
   console.log(
     `The problem was introduced by the upgrade to ${badEvent.packageName}@${
