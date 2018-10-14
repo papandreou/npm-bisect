@@ -10,7 +10,16 @@ const consumeReadableStream = require('./consumeReadableStream');
 const chalk = require('chalk');
 const os = require('os');
 
-const { good, bad } = require('yargs')
+const {
+  good,
+  bad,
+  _: [runCommand, ...runArgs]
+} = require('yargs')
+  .option('run', {
+    type: 'string',
+    describe:
+      'Shell command to run for each step. Will use interactive mode if not given'
+  })
   .option('good', {
     type: 'string'
   })
@@ -81,6 +90,21 @@ async function freshNpmInstall({ ignoreNewerThan, computeTimeline = false }) {
       }
     });
   });
+}
+
+async function checkWorkingState() {
+  if (runCommand) {
+    const err = await promisify(cb =>
+      childProcess.exec([runCommand, runArgs].join(' '), cb.bind(null, null))
+    )();
+    return !err;
+  } else {
+    return (await inquirer.prompt({
+      type: 'confirm',
+      name: 'works',
+      message: 'Does it work now?'
+    })).works;
+  }
 }
 
 function addTimeStrs(timeline) {
@@ -182,11 +206,7 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
     );
     const ignoreNewerThan = new Date(time.getTime() - 1);
     await freshNpmInstall({ ignoreNewerThan });
-    const works = (await inquirer.prompt({
-      type: 'confirm',
-      name: 'works',
-      message: 'Does it work now?'
-    })).works;
+    const works = await checkWorkingState();
     if (works) {
       goodBeforeIndex = tryBeforeIndex;
     } else {
