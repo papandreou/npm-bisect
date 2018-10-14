@@ -8,6 +8,7 @@ const promisify = require('util').promisify;
 const rimrafAsync = promisify(require('rimraf'));
 const consumeReadableStream = require('./consumeReadableStream');
 const chalk = require('chalk');
+const os = require('os');
 
 const { good, bad } = require('yargs')
   .option('good', {
@@ -28,7 +29,16 @@ async function getTimeOfHeadCommit() {
 
 async function freshNpmInstall({ ignoreNewerThan, computeTimeline = false }) {
   await rimrafAsync('node_modules');
+  // Use a separate cache dir for each point in time so the monkey patched
+  // payloads don't mess anything up:
+  const cacheDir = pathModule.resolve(
+    os.tmpDir(),
+    `npm-bisect-cache-dir-${ignoreNewerThan.toJSON()}-${Math.floor(
+      1000000 * Math.random()
+    )}`
+  );
   const env = {
+    npm_config_cache: cacheDir,
     NPM_BISECT_IGNORE_NEWER_THAN: ignoreNewerThan.toJSON()
   };
   const options = {
