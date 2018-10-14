@@ -54,7 +54,7 @@ async function installDependencies({
   ignoreNewerThan,
   computeTimeline = false
 }) {
-  await rimrafAsync('node_modules');
+  await rimrafAsync('node_modules/*', { glob: { dot: true } });
   // Use a separate cache dir for each point in time so the monkey patched
   // payloads don't mess anything up:
   const cacheDir = pathModule.resolve(
