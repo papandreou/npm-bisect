@@ -73,43 +73,47 @@ async function installDependencies({
   if (computeTimeline) {
     env.NPM_BISECT_COMPUTE_TIMELINE = true;
   }
-  return new Promise((resolve, reject) => {
-    const unwrap = spawnWrap([pathModule.resolve(__dirname, 'main.js')], env);
-    const command = yarn ? 'yarn' : 'npm';
-    const args = ['install'];
-    if (yarn) {
-      args.push('--cache-folder', cacheDir, '--pure-lockfile');
-    }
-    const p = childProcess.spawn(command, args, options);
-    const stderrPromise = consumeReadableStream(p.stderr);
-    p.on('error', reject).on('exit', async exitCode => {
-      unwrap();
-      const { body, err } = await stderrPromise;
-      if (exitCode === 0) {
-        if (err) {
-          reject(err);
-        }
-        const matchTimeline = body
-          .toString('utf-8')
-          .match(/^NPM_BISECT_COMPUTE_TIMELINE:(\[.*\])$/m);
-        if (matchTimeline) {
-          resolve(
-            JSON.parse(matchTimeline[1]).map(({ time, ...rest }) => ({
-              time: new Date(time),
-              ...rest
-            }))
+  try {
+    return await new Promise((resolve, reject) => {
+      const unwrap = spawnWrap([pathModule.resolve(__dirname, 'main.js')], env);
+      const command = yarn ? 'yarn' : 'npm';
+      const args = ['install'];
+      if (yarn) {
+        args.push('--cache-folder', cacheDir, '--pure-lockfile');
+      }
+      const p = childProcess.spawn(command, args, options);
+      const stderrPromise = consumeReadableStream(p.stderr);
+      p.on('error', reject).on('exit', async exitCode => {
+        unwrap();
+        const { body, err } = await stderrPromise;
+        if (exitCode === 0) {
+          if (err) {
+            reject(err);
+          }
+          const matchTimeline = body
+            .toString('utf-8')
+            .match(/^NPM_BISECT_COMPUTE_TIMELINE:(\[.*\])$/m);
+          if (matchTimeline) {
+            resolve(
+              JSON.parse(matchTimeline[1]).map(({ time, ...rest }) => ({
+                time: new Date(time),
+                ...rest
+              }))
+            );
+          }
+          resolve();
+        } else {
+          reject(
+            new Error(
+              `${command} ${args.join(' ')} exited with ${exitCode}:\n${body}`
+            )
           );
         }
-        resolve();
-      } else {
-        reject(
-          new Error(
-            `${command} ${args.join(' ')} exited with ${exitCode}:\n${body}`
-          )
-        );
-      }
+      });
     });
-  });
+  } finally {
+    await rimrafAsync(cacheDir);
+  }
 }
 
 async function checkWorkingState() {
