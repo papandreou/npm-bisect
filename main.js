@@ -88,11 +88,11 @@ function removeVersionsFromPackageMetadata(obj, timeByVersion) {
   return changesMade;
 }
 
-const timelineEvents = [];
+const timeline = [];
 function updateTimeline(packageName, timeByVersion) {
   for (const version of Object.keys(timeByVersion)) {
     if (version !== 'modified' && version !== 'created') {
-      timelineEvents.push({
+      timeline.push({
         packageName,
         version,
         time: new Date(timeByVersion[version])
@@ -242,16 +242,16 @@ require('spawn-wrap').runMain();
 
 if (process.env.NPM_BISECT_COMPUTE_TIMELINE) {
   process.on('exit', () => {
-    timelineEvents.sort((a, b) => {
+    timeline.sort((a, b) => {
       return a.time.getTime() - b.time.getTime();
     });
-    const uniqueTimelineEvents = uniqBy(
-      timelineEvents,
+    const uniquetimeline = uniqBy(
+      timeline,
       ({ packageName, version }) => `${packageName}@${version}`
     );
 
     console.error(
-      `NPM_BISECT_COMPUTE_TIMELINE:${JSON.stringify(uniqueTimelineEvents)}`
+      `NPM_BISECT_COMPUTE_TIMELINE:${JSON.stringify(uniquetimeline)}`
     );
   });
 }
