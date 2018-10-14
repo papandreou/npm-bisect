@@ -206,6 +206,10 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
     console.log(
       `Let's try right before ${packageName}@${version} was published`
     );
+    const numStepsLeft = Math.ceil(Math.log2(badAfterIndex - goodBeforeIndex));
+    console.log(
+      `Roughly ${numStepsLeft} step${numStepsLeft === 1 ? '' : 's'} left`
+    );
     const ignoreNewerThan = new Date(time.getTime() - 1);
     await freshNpmInstall({ ignoreNewerThan });
     const works = await checkWorkingState();
