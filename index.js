@@ -32,7 +32,7 @@ async function freshNpmInstall({ ignoreNewerThan, computeTimeline = false }) {
   // Use a separate cache dir for each point in time so the monkey patched
   // payloads don't mess anything up:
   const cacheDir = pathModule.resolve(
-    os.tmpDir(),
+    os.tmpdir(),
     `npm-bisect-cache-dir-${ignoreNewerThan.toJSON()}-${Math.floor(
       1000000 * Math.random()
     )}`
