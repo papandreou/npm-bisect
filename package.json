@@ -12,6 +12,7 @@
   "author": "Andreas Lind <andreaslindpetersen@gmail.com>",
   "license": "BSD-3-Clause",
   "dependencies": {
+    "inquirer": "^6.2.0",
     "lodash.pick": "^4.4.0",
     "lodash.uniqby": "^4.7.0",
     "mitm-papandreou": "^1.3.3-patch5",

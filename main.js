@@ -5,6 +5,7 @@ const https = require('https');
 const pick = require('lodash.pick');
 const uniqBy = require('lodash.uniqby');
 const fs = require('fs');
+const consumeReadableStream = require('./consumeReadableStream');
 
 // Monkey-patch fs so that npm thinks its metadata cache is empty:
 for (const methodName of ['stat', 'lstat']) {
@@ -40,25 +41,6 @@ const metadataPropertyNames = [
 ];
 
 const ignoreNewerThan = new Date(process.env.NPM_BISECT_IGNORE_NEWER_THAN);
-
-function consumeReadableStream(readableStream) {
-  return new Promise(resolve => {
-    const chunks = [];
-    readableStream
-      .on('data', chunk => {
-        chunks.push(chunk);
-      })
-      .on('end', chunk => {
-        resolve({ body: Buffer.concat(chunks) });
-      })
-      .on('error', err => {
-        resolve({
-          body: Buffer.concat(chunks),
-          err
-        });
-      });
-  });
-}
 
 function performRequest(requestResult) {
   return new Promise((resolve, reject) => {
@@ -286,11 +268,13 @@ if (process.env.NPM_BISECT_COMPUTE_TIMELINE) {
     timelineEvents.sort((a, b) => {
       return a.time.getTime() - b.time.getTime();
     });
-    for (const { packageName, version, time } of uniqBy(
+    const uniqueTimelineEvents = uniqBy(
       timelineEvents,
       ({ packageName, version }) => `${packageName}@${version}`
-    )) {
-      console.log(`${time.toJSON()}: ${packageName}@${version}`);
-    }
+    );
+
+    console.error(
+      `NPM_BISECT_COMPUTE_TIMELINE:${JSON.stringify(uniqueTimelineEvents)}`
+    );
   });
 }
