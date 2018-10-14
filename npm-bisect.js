@@ -10,7 +10,7 @@ const consumeReadableStream = require('./consumeReadableStream');
 const chalk = require('chalk');
 const os = require('os');
 
-const { good, bad, debug, run } = require('yargs')
+const { good, bad, debug, ignore, run } = require('yargs')
   .option('debug', {
     type: 'boolean',
     default: false,
@@ -20,6 +20,12 @@ const { good, bad, debug, run } = require('yargs')
     type: 'string',
     describe:
       'Shell command to run for each step. Will use interactive mode if not given'
+  })
+  .option('ignore', {
+    type: 'string',
+    describe: 'Name of a package to ignore. Can be repeated',
+    array: true,
+    default: []
   })
   .option('good', {
     type: 'string',
@@ -177,7 +183,10 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
     computeTimeline: true
   });
 
-  timeline = timeline.filter(({ time }) => time > goodTime && time <= badTime);
+  timeline = timeline.filter(
+    ({ time, packageName }) =>
+      time > goodTime && time <= badTime && !ignore.includes(packageName)
+  );
   if (timeline.length === 0) {
     console.log(
       `No relevant packages have been published between ${badTime.toLocaleString()} and ${goodTime.toLocaleString()}`
