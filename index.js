@@ -171,8 +171,8 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
   }
   let goodBeforeIndex = 0;
   let badAfterIndex = timeline.length - 1;
-  while (badAfterIndex - goodBeforeIndex > 1) {
-    const tryBeforeIndex = Math.ceil(
+  while (badAfterIndex > goodBeforeIndex) {
+    const tryBeforeIndex = Math.round(
       goodBeforeIndex + (badAfterIndex - goodBeforeIndex) / 2
     );
     dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex);
@@ -193,6 +193,7 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
       badAfterIndex = tryBeforeIndex - 1;
     }
   }
+  dumpState(timeline, goodBeforeIndex, badAfterIndex);
   const badEvent = timeline[goodBeforeIndex];
   console.log(
     `The problem was introduced by the upgrade to ${badEvent.packageName}@${
