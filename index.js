@@ -193,4 +193,10 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
       badAfterIndex = tryBeforeIndex - 1;
     }
   }
+  const badEvent = timeline[goodBeforeIndex];
+  console.log(
+    `The problem was introduced by the upgrade to ${badEvent.packageName}@${
+      badEvent.version
+    } published at ${badEvent.time.toLocaleString()}`
+  );
 })();
