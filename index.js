@@ -9,22 +9,13 @@ const rimrafAsync = promisify(require('rimraf'));
 const consumeReadableStream = require('./consumeReadableStream');
 const chalk = require('chalk');
 
-const indexOfNpm = process.argv.findIndex(option =>
-  /(?:^|\/)npm$/.test(option)
-);
-
-if (indexOfNpm === -1) {
-  throw new Error('npm not found in the command line');
-}
-const { good, bad } = require('yargs')(process.argv.slice(0, indexOfNpm))
+const { good, bad } = require('yargs')
   .option('good', {
     type: 'string'
   })
   .option('bad', {
     type: 'string'
   }).argv;
-
-const [command, ...args] = process.argv.slice(indexOfNpm);
 
 async function getTimeOfHeadCommit() {
   // 2018-10-13 23:53:46 +0200
@@ -48,6 +39,8 @@ async function freshNpmInstall({ ignoreNewerThan, computeTimeline = false }) {
   }
   return new Promise((resolve, reject) => {
     const unwrap = spawnWrap([pathModule.resolve(__dirname, 'main.js')], env);
+    const command = 'npm';
+    const args = ['install'];
     const p = childProcess.spawn(command, args, options);
     const stderrPromise = consumeReadableStream(p.stderr);
     p.on('error', reject).on('exit', async exitCode => {
