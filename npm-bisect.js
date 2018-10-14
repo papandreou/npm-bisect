@@ -206,7 +206,6 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
       message:
         'Optionally deselect publications that you know did not cause the problem',
       name: 'publications',
-      pageSize: timeline.length,
       choices: timeline.map(event => ({
         name: `${event.timeStr} ${event.packageName}@${event.version}`,
         checked: true,
