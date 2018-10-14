@@ -172,7 +172,9 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
   let goodBeforeIndex = 0;
   let badAfterIndex = timeline.length - 1;
   while (badAfterIndex - goodBeforeIndex > 1) {
-    const tryBeforeIndex = Math.ceil((badAfterIndex - goodBeforeIndex) / 2);
+    const tryBeforeIndex = Math.ceil(
+      goodBeforeIndex + (badAfterIndex - goodBeforeIndex) / 2
+    );
     dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex);
     const { packageName, version, time } = timeline[tryBeforeIndex];
     console.log(
