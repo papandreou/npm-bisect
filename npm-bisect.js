@@ -10,12 +10,7 @@ const consumeReadableStream = require('./consumeReadableStream');
 const chalk = require('chalk');
 const os = require('os');
 
-const {
-  good,
-  bad,
-  debug,
-  _: [runCommand, ...runArgs]
-} = require('yargs')
+const { good, bad, debug, run } = require('yargs')
   .option('debug', {
     type: 'boolean',
     default: false,
@@ -101,9 +96,9 @@ async function freshNpmInstall({ ignoreNewerThan, computeTimeline = false }) {
 }
 
 async function checkWorkingState() {
-  if (runCommand) {
+  if (run) {
     const err = await promisify(cb =>
-      childProcess.exec([runCommand, runArgs].join(' '), cb.bind(null, null))
+      childProcess.exec(run, cb.bind(null, null))
     )();
     return !err;
   } else {
