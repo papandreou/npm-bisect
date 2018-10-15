@@ -9,8 +9,9 @@ const rimrafAsync = promisify(require('rimraf'));
 const consumeReadableStream = require('./consumeReadableStream');
 const chalk = require('chalk');
 const os = require('os');
+const uniq = require('lodash.uniq');
 
-const { good, bad, debug, ignore, yarn, run } = require('yargs')
+let { good, bad, debug, ignore, yarn, run } = require('yargs')
   .option('debug', {
     type: 'boolean',
     default: false,
@@ -198,10 +199,27 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
     computeTimeline: true
   });
 
+  timeline = timeline.filter(({ time }) => time > goodTime && time <= badTime);
+
+  const packageNames = uniq(timeline.map(event => event.packageName));
+  if (packageNames.length > 1 && ignore.length === 0) {
+    ignore = (await inquirer.prompt({
+      type: 'checkbox',
+      message:
+        'Optionally select packages that you know did not cause the problem',
+      name: 'ignore',
+      choices: packageNames.map(packageName => ({
+        name: `${packageName} (${
+          timeline.filter(event => event.packageName === packageName).length
+        })`,
+        value: packageName
+      }))
+    })).ignore;
+  }
   timeline = timeline.filter(
-    ({ time, packageName }) =>
-      time > goodTime && time <= badTime && !ignore.includes(packageName)
+    ({ packageName }) => !ignore.includes(packageName)
   );
+
   if (timeline.length === 0) {
     console.log(
       `No relevant packages have been published between ${badTime.toLocaleString()} and ${goodTime.toLocaleString()}`
@@ -215,19 +233,7 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
     } that could have caused the problem:`
   );
   addTimeStrs(timeline);
-  if (timeline.length > 1) {
-    timeline = (await inquirer.prompt({
-      type: 'checkbox',
-      message:
-        'Optionally deselect publications that you know did not cause the problem',
-      name: 'publications',
-      choices: timeline.map(event => ({
-        name: `${event.timeStr} ${event.packageName}@${event.version}`,
-        checked: true,
-        value: event
-      }))
-    })).publications;
-  }
+
   let goodBeforeIndex = 0;
   let badAfterIndex = timeline.length - 1;
   while (badAfterIndex > goodBeforeIndex) {
