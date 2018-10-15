@@ -81,6 +81,8 @@ async function installDependencies({
       const args = ['install'];
       if (yarn) {
         args.push('--cache-folder', cacheDir, '--pure-lockfile');
+      } else {
+        args.push('--no-audit');
       }
       const p = childProcess.spawn(command, args, options);
       const stderrPromise = consumeReadableStream(p.stderr);
