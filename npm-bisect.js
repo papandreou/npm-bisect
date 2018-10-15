@@ -42,12 +42,14 @@ let { good, bad, debug, ignore, yarn, run } = require('yargs')
     describe: 'Date or datetime where the project was first found broken'
   }).argv;
 
+async function exec(cmd) {
+  return await promisify(cb => childProcess.exec(cmd, cb.bind(null)))();
+}
+
 async function getTimeOfHeadCommit() {
-  return new Date(
-    await promisify(cb =>
-      childProcess.exec('git show -s --format=%ci', cb.bind(null))
-    )()
-  );
+  try {
+    return new Date(await exec('git show -s --format=%ci'));
+  } catch (err) {}
 }
 
 async function installDependencies({
@@ -179,7 +181,7 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
       (await inquirer.prompt({
         type: 'input',
         message: 'When did it last work?',
-        default: (await getTimeOfHeadCommit()).toLocaleString(),
+        default: await getTimeOfHeadCommit(),
         name: 'good',
         validate: str => !isNaN(new Date(str).getTime())
       })).good
