@@ -43,7 +43,6 @@ let { good, bad, debug, ignore, yarn, run } = require('yargs')
   }).argv;
 
 async function getTimeOfHeadCommit() {
-  // 2018-10-13 23:53:46 +0200
   return new Date(
     await promisify(cb =>
       childProcess.exec('git show -s --format=%ci', cb.bind(null))
