@@ -84,6 +84,9 @@ async function installDependencies({
         args.push('--cache-folder', cacheDir, '--pure-lockfile');
       } else {
         args.push('--no-audit');
+        if (computeTimeline) {
+          args.push('--dry-run');
+        }
       }
       const p = childProcess.spawn(command, args, options);
       const stderrPromise = consumeReadableStream(p.stderr);
