@@ -239,7 +239,7 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
 
   if (timeline.length === 0) {
     console.log(
-      `No relevant packages have been published between ${badTime.toLocaleString()} and ${goodTime.toLocaleString()}`
+      `No relevant packages have been published between ${goodTime.toLocaleString()} and ${badTime.toLocaleString()}`
     );
     return;
   }
