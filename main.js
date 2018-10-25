@@ -238,8 +238,8 @@ mitm
   });
 
 if (process.env.NPM_BISECT_COMPUTE_TIMELINE) {
-  const processExit = process.exit;
-  process.exit = exitCode => {
+  require('set-blocking')(true);
+  process.on('exit', () => {
     timeline.sort((a, b) => {
       return a.time.getTime() - b.time.getTime();
     });
@@ -251,9 +251,7 @@ if (process.env.NPM_BISECT_COMPUTE_TIMELINE) {
     console.error(
       `\nNPM_BISECT_COMPUTE_TIMELINE:${JSON.stringify(uniquetimeline)}`
     );
-    // Don't exit until stderr has been fully flushed to avoid losing output:
-    process.stderr.on('drain', () => processExit.call(process, exitCode));
-  };
+  });
 }
 
 // Run the wrapped executable:
