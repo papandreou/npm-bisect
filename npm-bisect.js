@@ -3,6 +3,7 @@
 const childProcess = require('child_process');
 const pathModule = require('path');
 const spawnWrap = require('spawn-wrap');
+const semver = require('semver');
 const inquirer = require('inquirer');
 const promisify = require('util').promisify;
 const rimrafAsync = promisify(require('rimraf'));
@@ -222,8 +223,18 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
       }))
     })).ignore;
   }
+
+  ignore = ignore.map(packageName => {
+    let versionRange = '*';
+    const matchVersion = packageName.match(/^([^@]+)@(.+)$/);
+    if (matchVersion) {
+      [, packageName, versionRange] = matchVersion;
+    }
+    return {packageName, versionRange};
+  });
+
   timeline = timeline.filter(
-    ({ packageName }) => !ignore.includes(packageName)
+    event => !ignore.some(({packageName, versionRange}) => event.packageName === packageName && semver.satisfies(event.packageVersion, versionRange))
   );
 
   if (timeline.length === 0) {
