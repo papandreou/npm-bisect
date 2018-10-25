@@ -237,11 +237,9 @@ mitm
     });
   });
 
-// Run the wrapped executable:
-require('spawn-wrap').runMain();
-
 if (process.env.NPM_BISECT_COMPUTE_TIMELINE) {
-  process.on('exit', () => {
+  const processExit = process.exit;
+  process.exit = exitCode => {
     timeline.sort((a, b) => {
       return a.time.getTime() - b.time.getTime();
     });
@@ -253,5 +251,10 @@ if (process.env.NPM_BISECT_COMPUTE_TIMELINE) {
     console.error(
       `\nNPM_BISECT_COMPUTE_TIMELINE:${JSON.stringify(uniquetimeline)}`
     );
-  });
+    // Don't exit until stderr has been fully flushed to avoid losing output:
+    process.stderr.on('drain', () => processExit.call(process, exitCode));
+  };
 }
+
+// Run the wrapped executable:
+require('spawn-wrap').runMain();
