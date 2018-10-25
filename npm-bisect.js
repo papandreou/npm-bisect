@@ -242,11 +242,16 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
     if (matchVersion) {
       [, packageName, versionRange] = matchVersion;
     }
-    return {packageName, versionRange};
+    return { packageName, versionRange };
   });
 
   timeline = timeline.filter(
-    event => !ignore.some(({packageName, versionRange}) => event.packageName === packageName && semver.satisfies(event.packageVersion, versionRange))
+    event =>
+      !ignore.some(
+        ({ packageName, versionRange }) =>
+          event.packageName === packageName &&
+          semver.satisfies(event.packageVersion, versionRange)
+      )
   );
 
   if (timeline.length === 0) {
