@@ -1,9 +1,7 @@
 const mitm = require('mitm-papandreou')();
-
 const http = require('http');
 const https = require('https');
 const pick = require('lodash.pick');
-const uniqBy = require('lodash.uniqby');
 const consumeReadableStream = require('./consumeReadableStream');
 
 const metadataPropertyNames = [
@@ -240,17 +238,7 @@ mitm
 if (process.env.NPM_BISECT_COMPUTE_TIMELINE) {
   require('set-blocking')(true);
   process.on('exit', () => {
-    timeline.sort((a, b) => {
-      return a.time.getTime() - b.time.getTime();
-    });
-    const uniquetimeline = uniqBy(
-      timeline,
-      ({ packageName, version }) => `${packageName}@${version}`
-    );
-
-    console.error(
-      `\nNPM_BISECT_COMPUTE_TIMELINE:${JSON.stringify(uniquetimeline)}`
-    );
+    console.error(`\nNPM_BISECT_COMPUTE_TIMELINE:${JSON.stringify(timeline)}`);
   });
 }
 

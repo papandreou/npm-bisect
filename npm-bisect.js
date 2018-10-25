@@ -11,6 +11,8 @@ const consumeReadableStream = require('./consumeReadableStream');
 const chalk = require('chalk');
 const os = require('os');
 const uniq = require('lodash.uniq');
+const uniqBy = require('lodash.uniqby');
+const flatten = require('lodash.flatten');
 
 let { good, bad, debug, ignore, yarn, run } = require('yargs')
   .option('debug', {
@@ -98,16 +100,26 @@ async function installDependencies({
           if (err) {
             reject(err);
           }
-          const matchTimeline = body
+          const jsonStrs = body
             .toString('utf-8')
-            .match(/^NPM_BISECT_COMPUTE_TIMELINE:(\[.*\])$/m);
-          if (matchTimeline) {
-            resolve(
-              JSON.parse(matchTimeline[1]).map(({ time, ...rest }) => ({
-                time: new Date(time),
-                ...rest
-              }))
+            .match(/(?<=^NPM_BISECT_COMPUTE_TIMELINE:)\[.*\]$/gm);
+          if (jsonStrs) {
+            let timeline = flatten(
+              jsonStrs.map(jsonStr =>
+                JSON.parse(jsonStr).map(({ time, ...rest }) => ({
+                  time: new Date(time),
+                  ...rest
+                }))
+              )
             );
+            timeline.sort((a, b) => {
+              return a.time.getTime() - b.time.getTime();
+            });
+            timeline = uniqBy(
+              timeline,
+              ({ packageName, version }) => `${packageName}@${version}`
+            );
+            resolve(timeline);
           }
           resolve();
         } else {
