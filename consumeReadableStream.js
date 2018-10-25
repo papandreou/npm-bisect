@@ -5,7 +5,7 @@ module.exports = function consumeReadableStream(readableStream) {
       .on('data', chunk => {
         chunks.push(chunk);
       })
-      .on('end', chunk => {
+      .on('end', () => {
         resolve({ body: Buffer.concat(chunks) });
       })
       .on('error', err => {
