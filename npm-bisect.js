@@ -32,7 +32,8 @@ let { good, bad, debug, ignore, yarn, run } = require('yargs')
   })
   .option('ignore', {
     type: 'string',
-    describe: 'Name of a package to ignore. Can be repeated',
+    describe:
+      'Name of a package to ignore, optionally suffixed with a version number or version range, eg. underscore@^1.2.3. Can be repeated',
     array: true,
     default: []
   })
