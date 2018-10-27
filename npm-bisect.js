@@ -53,6 +53,22 @@ let { good, bad, debug, ignore, only, yarn, run } = require('yargs')
     describe: 'Date or datetime where the project was first found broken'
   }).argv;
 
+function parsePackageAndVersionRange(packageName) {
+  let versionRange = '*';
+  const matchVersion = packageName.match(/^([^@]+)@(.+)$/);
+  if (matchVersion) {
+    [, packageName, versionRange] = matchVersion;
+  }
+  return { packageName, versionRange };
+}
+
+function matchesPackageSpec(event, spec) {
+  return (
+    event.packageName === spec.packageName &&
+    semver.satisfies(event.version, spec.versionRange)
+  );
+}
+
 async function exec(cmd) {
   return await promisify(cb => childProcess.exec(cmd, cb.bind(null)))();
 }
@@ -226,21 +242,10 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
   timeline = timeline.filter(({ time }) => time > goodTime && time <= badTime);
 
   if (only.length > 0) {
-    only = only.map(packageName => {
-      let versionRange = '*';
-      const matchVersion = packageName.match(/^([^@]+)@(.+)$/);
-      if (matchVersion) {
-        [, packageName, versionRange] = matchVersion;
-      }
-      return { packageName, versionRange };
-    });
+    const onlySpecs = only.map(parsePackageAndVersionRange);
 
     timeline = timeline.filter(event =>
-      only.some(
-        ({ packageName, versionRange }) =>
-          event.packageName === packageName &&
-          semver.satisfies(event.version, versionRange)
-      )
+      onlySpecs.some(spec => matchesPackageSpec(event, spec))
     );
   }
 
@@ -260,22 +265,10 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
     })).ignore;
   }
 
-  ignore = ignore.map(packageName => {
-    let versionRange = '*';
-    const matchVersion = packageName.match(/^([^@]+)@(.+)$/);
-    if (matchVersion) {
-      [, packageName, versionRange] = matchVersion;
-    }
-    return { packageName, versionRange };
-  });
+  const ignoreSpecs = ignore.map(parsePackageAndVersionRange);
 
   timeline = timeline.filter(
-    event =>
-      !ignore.some(
-        ({ packageName, versionRange }) =>
-          event.packageName === packageName &&
-          semver.satisfies(event.version, versionRange)
-      )
+    event => !ignoreSpecs.some(spec => matchesPackageSpec(event, spec))
   );
 
   if (timeline.length === 0) {
