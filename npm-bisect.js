@@ -247,7 +247,7 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
       !ignore.some(
         ({ packageName, versionRange }) =>
           event.packageName === packageName &&
-          semver.satisfies(event.packageVersion, versionRange)
+          semver.satisfies(event.version, versionRange)
       )
   );
 
