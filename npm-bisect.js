@@ -14,7 +14,7 @@ const uniq = require('lodash.uniq');
 const uniqBy = require('lodash.uniqby');
 const flatten = require('lodash.flatten');
 
-let { good, bad, debug, ignore, yarn, run } = require('yargs')
+let { good, bad, debug, ignore, only, yarn, run } = require('yargs')
   .option('debug', {
     type: 'boolean',
     default: false,
@@ -34,6 +34,13 @@ let { good, bad, debug, ignore, yarn, run } = require('yargs')
     type: 'string',
     describe:
       'Name of a package to ignore, optionally suffixed with a version number or version range, eg. underscore@^1.2.3. Can be repeated',
+    array: true,
+    default: []
+  })
+  .option('only', {
+    type: 'string',
+    describe:
+      'Name of a package to include in the search, optionally suffixed with a version number or version range, eg. underscore@^1.2.3. Can be repeated. Using this switch implicitly excludes all packages that are not included',
     array: true,
     default: []
   })
@@ -218,8 +225,27 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
 
   timeline = timeline.filter(({ time }) => time > goodTime && time <= badTime);
 
+  if (only.length > 0) {
+    only = only.map(packageName => {
+      let versionRange = '*';
+      const matchVersion = packageName.match(/^([^@]+)@(.+)$/);
+      if (matchVersion) {
+        [, packageName, versionRange] = matchVersion;
+      }
+      return { packageName, versionRange };
+    });
+
+    timeline = timeline.filter(event =>
+      only.some(
+        ({ packageName, versionRange }) =>
+          event.packageName === packageName &&
+          semver.satisfies(event.version, versionRange)
+      )
+    );
+  }
+  console.log('timeline', timeline);
   const packageNames = uniq(timeline.map(event => event.packageName));
-  if (packageNames.length > 1 && ignore.length === 0) {
+  if (packageNames.length > 1 && ignore.length === 0 && only.length === 0) {
     ignore = (await inquirer.prompt({
       type: 'checkbox',
       message:
