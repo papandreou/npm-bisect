@@ -243,7 +243,7 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
       )
     );
   }
-  console.log('timeline', timeline);
+
   const packageNames = uniq(timeline.map(event => event.packageName));
   if (packageNames.length > 1 && ignore.length === 0 && only.length === 0) {
     ignore = (await inquirer.prompt({
