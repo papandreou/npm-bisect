@@ -17,11 +17,17 @@ const uniq = require('lodash.uniq');
 const uniqBy = require('lodash.uniqby');
 const flatten = require('lodash.flatten');
 
-let { good, bad, debug, ignore, only, yarn, run } = require('yargs')
+let { good, bad, debug, ignore, only, yarn, run, candidates } = require('yargs')
   .option('debug', {
     type: 'boolean',
     default: false,
     describe: 'Produce verbose output for each step'
+  })
+  .option('candidates', {
+    type: 'boolean',
+    default: false,
+    describe:
+      'Instead of bisecting, just output a list of candidate packages and exit'
   })
   .option('yarn', {
     type: 'boolean',
@@ -248,6 +254,13 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
   });
 
   timeline = timeline.filter(({ time }) => time > goodTime && time <= badTime);
+
+  if (candidates) {
+    for (const { time, packageName, version } of timeline) {
+      console.log(`${time.toJSON()}: ${packageName}@${version}`);
+    }
+    process.exit();
+  }
 
   if (only.length > 0) {
     const onlySpecs = only.map(parsePackageAndVersionRange);
