@@ -6,8 +6,11 @@ const spawnWrap = require('spawn-wrap');
 const semver = require('semver');
 const inquirer = require('inquirer');
 const promisify = require('util').promisify;
+const fs = require('fs');
+const readFileAsync = promisify(fs.readFile);
+const mkdirAsync = promisify(fs.mkdir);
 const rimrafAsync = promisify(require('rimraf'));
-const consumeReadableStream = require('./consumeReadableStream');
+const globAsync = promisify(require('glob'));
 const chalk = require('chalk');
 const os = require('os');
 const uniq = require('lodash.uniq');
@@ -97,10 +100,16 @@ async function installDependencies({
     NPM_BISECT_IGNORE_NEWER_THAN: ignoreNewerThan.toJSON()
   };
   const options = {
-    stdio: ['inherit', 'inherit', 'pipe']
+    stdio: 'inherit'
   };
   if (computeTimeline) {
-    env.NPM_BISECT_COMPUTE_TIMELINE = true;
+    await mkdirAsync(cacheDir);
+    const timelineOutputDir = pathModule.resolve(
+      cacheDir,
+      `npm-bisect-out-${Math.floor(1000000 * Math.random())}`
+    );
+    await mkdirAsync(timelineOutputDir);
+    env.NPM_BISECT_COMPUTE_TIMELINE = timelineOutputDir;
   }
   try {
     return await new Promise((resolve, reject) => {
@@ -113,18 +122,18 @@ async function installDependencies({
         args.push('--no-audit');
       }
       const p = childProcess.spawn(command, args, options);
-      const stderrPromise = consumeReadableStream(p.stderr);
       p.on('error', reject).on('exit', async exitCode => {
         unwrap();
-        const { body, err } = await stderrPromise;
         if (exitCode === 0) {
-          if (err) {
-            reject(err);
-          }
-          const jsonStrs = body
-            .toString('utf-8')
-            .match(/(?<=^NPM_BISECT_COMPUTE_TIMELINE:)\[.*\]$/gm);
-          if (jsonStrs) {
+          if (computeTimeline) {
+            const fileNames = await globAsync(
+              pathModule.resolve(env.NPM_BISECT_COMPUTE_TIMELINE, '*.json')
+            );
+            const jsonStrs = await Promise.all(
+              fileNames.map(
+                async fileName => await readFileAsync(fileName, 'utf-8')
+              )
+            );
             let timeline = flatten(
               jsonStrs.map(jsonStr =>
                 JSON.parse(jsonStr).map(({ time, ...rest }) => ({
@@ -141,13 +150,12 @@ async function installDependencies({
               ({ packageName, version }) => `${packageName}@${version}`
             );
             resolve(timeline);
+          } else {
+            resolve();
           }
-          resolve();
         } else {
           reject(
-            new Error(
-              `${command} ${args.join(' ')} exited with ${exitCode}:\n${body}`
-            )
+            new Error(`${command} ${args.join(' ')} exited with ${exitCode}`)
           );
         }
       });

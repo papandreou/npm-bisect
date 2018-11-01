@@ -2,6 +2,8 @@ const mitm = require('mitm-papandreou')();
 const http = require('http');
 const https = require('https');
 const pick = require('lodash.pick');
+const fs = require('fs');
+const pathModule = require('path');
 const consumeReadableStream = require('./consumeReadableStream');
 
 const metadataPropertyNames = [
@@ -236,9 +238,14 @@ mitm
   });
 
 if (process.env.NPM_BISECT_COMPUTE_TIMELINE) {
-  require('set-blocking')(true);
   process.on('exit', () => {
-    console.error(`\nNPM_BISECT_COMPUTE_TIMELINE:${JSON.stringify(timeline)}`);
+    fs.writeFileSync(
+      pathModule.resolve(
+        process.env.NPM_BISECT_COMPUTE_TIMELINE,
+        `${process.pid}.json`
+      ),
+      JSON.stringify(timeline)
+    );
   });
 }
 
