@@ -178,11 +178,13 @@ async function checkWorkingState() {
     )();
     return !err;
   } else {
-    return (await inquirer.prompt({
-      type: 'confirm',
-      name: 'works',
-      message: 'Does it work now?'
-    })).works;
+    return (
+      await inquirer.prompt({
+        type: 'confirm',
+        name: 'works',
+        message: 'Does it work now?'
+      })
+    ).works;
   }
 }
 
@@ -229,24 +231,28 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
 (async () => {
   let goodTime = new Date(
     good ||
-      (await inquirer.prompt({
-        type: 'input',
-        message: 'When did it last work?',
-        default: await getTimeOfHeadCommit(),
-        name: 'good',
-        validate: str => !isNaN(new Date(str).getTime())
-      })).good
+      (
+        await inquirer.prompt({
+          type: 'input',
+          message: 'When did it last work?',
+          default: await getTimeOfHeadCommit(),
+          name: 'good',
+          validate: str => !isNaN(new Date(str).getTime())
+        })
+      ).good
   );
 
   let badTime = new Date(
     bad ||
-      (await inquirer.prompt({
-        type: 'input',
-        message: 'When did it stop working?',
-        name: 'bad',
-        default: new Date().toLocaleString(),
-        validate: str => !isNaN(new Date(str).getTime())
-      })).bad
+      (
+        await inquirer.prompt({
+          type: 'input',
+          message: 'When did it stop working?',
+          name: 'bad',
+          default: new Date().toLocaleString(),
+          validate: str => !isNaN(new Date(str).getTime())
+        })
+      ).bad
   );
   let timeline = await installDependencies({
     ignoreNewerThan: goodTime,
@@ -272,18 +278,20 @@ function dumpState(timeline, goodBeforeIndex, badAfterIndex, tryBeforeIndex) {
 
   const packageNames = uniq(timeline.map(event => event.packageName));
   if (packageNames.length > 1 && ignore.length === 0 && only.length === 0) {
-    ignore = (await inquirer.prompt({
-      type: 'checkbox',
-      message:
-        'Optionally select packages that you know did not cause the problem',
-      name: 'ignore',
-      choices: packageNames.map(packageName => ({
-        name: `${packageName} (${
-          timeline.filter(event => event.packageName === packageName).length
-        })`,
-        value: packageName
-      }))
-    })).ignore;
+    ignore = (
+      await inquirer.prompt({
+        type: 'checkbox',
+        message:
+          'Optionally select packages that you know did not cause the problem',
+        name: 'ignore',
+        choices: packageNames.map(packageName => ({
+          name: `${packageName} (${
+            timeline.filter(event => event.packageName === packageName).length
+          })`,
+          value: packageName
+        }))
+      })
+    ).ignore;
   }
 
   const ignoreSpecs = ignore.map(parsePackageAndVersionRange);
