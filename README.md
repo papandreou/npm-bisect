@@ -1,7 +1,7 @@
 ## npm-bisect
 
 Highly experimental tool to help locate a regression in a project caused by a
-new version of a direct or indirect dependency. Insipired by `git bisect`.
+new version of a direct or indirect dependency. Inspired by `git bisect`.
 
 ### Installation
 
